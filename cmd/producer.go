@@ -6,6 +6,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"math/rand"
 	"os"
@@ -25,7 +26,7 @@ var producerCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		server, _ := cmd.Flags().GetString("bootstrap-server")
 		topic, _ := cmd.Flags().GetString("topic")
-		partition, _ := cmd.Flags().GetInt("partition")
+		partition, _ := cmd.Flags().GetInt("partitions")
 		path, _ := cmd.Flags().GetString("dataset")
 		fakeDelay, _ := cmd.Flags().GetBool("fake-delay")
 
@@ -35,11 +36,14 @@ var producerCmd = &cobra.Command{
 		}
 		defer f.Close()
 
+		fmt.Println("tcp", server, topic, partition)
+		fmt.Print("connect")
 		conn, err := kafka.DialLeader(context.Background(), "tcp", server, topic, partition)
 		if err != nil {
 			log.Fatal(err)
 		}
 		defer conn.Close()
+		fmt.Println("ed")
 
 		var activities []models.UserActivity
 		json.NewDecoder(f).Decode(&activities)
@@ -66,7 +70,7 @@ func init() {
 	rootCmd.AddCommand(producerCmd)
 	producerCmd.PersistentFlags().StringP("bootstrap-server", "s", "localhost:9092", "Kafka server address")
 	producerCmd.PersistentFlags().StringP("topic", "t", "activities", "Kafka topic")
-	producerCmd.PersistentFlags().IntP("partitions", "p", 1, "Kafka topic partitions")
+	producerCmd.PersistentFlags().IntP("partitions", "p", 0, "Kafka topic partitions")
 	producerCmd.PersistentFlags().StringP("dataset", "d", "sample_data.json", "Dataset path")
 	producerCmd.PersistentFlags().BoolP("fake-delay", "f", false, "Dataset path")
 }
